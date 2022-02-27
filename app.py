@@ -1,12 +1,22 @@
 from flask import Flask
 from flask import request
 from flask_cors import CORS
+from spacy import blank
 import ee
 from google.auth.transport.requests import AuthorizedSession
 from google.oauth2 import service_account
 import json
 import math
 import requests
+import numpy as np
+import os
+import torch.nn as nn
+import torch
+import cv2 as cv
+
+from feature import process
+from model import NeuralNetwork
+
 
 
 from calculate_area import calculate_area
@@ -55,24 +65,64 @@ def get_cordinates():
     rois = [poi.buffer(BUFFER) for poi in pois]
 
     # cordinates = request.form.getlist('cords[]')
-    for count, roi in enumerate(rois):
-        for i, band in enumerate(bands):
-            img_info = {
-                'min': b_min[i],
-                'max': b_max[i],
-                'bands':[band],
-                'dimensions': 512,
-                'palette': ["000080","#0000D9","#4000FF","#8000FF","#0080FF","#00FFFF",
-                "#00FF80","#80FF00","#DAFF00","#FFFF00","#FFF500","#FFDA00",
-                "#FFB000","#FFA400","#FF4F00","#FF2500","#FF0A00","#FF00FF"],
-                'region': roi, 
-            }
-            url = era5_img.getThumbUrl(img_info)
-            folder_dir = band.split('_')[0]
-            r = requests.get(url)
-            with open(f'{folder_dir}/{count}.png', 'wb') as f:
-                f.write(r.content)
+    # print('line 66')
+    # for count, roi in enumerate(rois):
+    #     print(count)
+    #     for i, band in enumerate(bands):
+    #         img_info = {
+    #             'min': b_min[i],
+    #             'max': b_max[i],
+    #             'bands':[band],
+    #             'dimensions': 512,
+    #             'palette': ["000080","#0000D9","#4000FF","#8000FF","#0080FF","#00FFFF",
+    #             "#00FF80","#80FF00","#DAFF00","#FFFF00","#FFF500","#FFDA00",
+    #             "#FFB000","#FFA400","#FF4F00","#FF2500","#FF0A00","#FF00FF"],
+    #             'region': roi, 
+    #         }
+    #         url = era5_img.getThumbUrl(img_info)
+    #         folder_dir = band.split('_')[0]
+    #         r = requests.get(url)
+    #         with open(f'{folder_dir}/{count}.png', 'wb') as f:
+    #             f.write(r.content)
+    process()
+    print('line 85')
 
+    m = NeuralNetwork()
+    m.load_state_dict(torch.load('weight.pt'))
+    m.eval()
+    inputs = torch.tensor([], dtype=torch.float32)
+    for i in range(4):
+        with open(f'features/{i}.npy', 'rb') as f:
+            data = np.load(f)
+            data = torch.tensor(data, dtype=torch.float32).reshape(1, 1, 48)
+            if inputs.nelement() == 0:
+                inputs = data
+            else:
+                inputs = torch.cat((inputs, data), 0) 
+    inputs = inputs.repeat(15, 1, 1)
+    outputs = m(inputs)
+    outputs = [1/1+torch.exp(-outputs[i][0]) for i in range(4)]
+
+
+    blank_image = np.zeros((256, 256, 3), dtype=np.uint8)
+    if outputs[0].item() < 0.5:
+        blank_image[:128, :128] = (0,0,255)
+    else:
+        blank_image[:128, :128] = (0,255, 0)
+    if outputs[1].item() < 0.5:
+        blank_image[:128, 128:] = (0,0,255)
+    else:
+        blank_image[:128, 128:] = (0,255, 0)
+    if outputs[2].item() < 0.5:
+        blank_image[128:, :128] = (0,0,255)
+    else:
+        blank_image[128:, :128] = (0,255, 0)
+    if outputs[3].item() < 0.5:
+        blank_image[128:, 128:] = (0,0,255)
+    else:
+        blank_image[128:, 128:] = (0,255, 0)
+
+    cv.imwrite('res.jpg', blank_image)
 
 
 if __name__ == '__main__':
