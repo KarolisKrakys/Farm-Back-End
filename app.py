@@ -13,6 +13,7 @@ import os
 import torch.nn as nn
 import torch
 import cv2 as cv
+from flask import send_file
 
 from feature import process
 from model import NeuralNetwork
@@ -123,6 +124,8 @@ def get_cordinates():
         blank_image[128:, 128:] = (0,255, 0)
 
     cv.imwrite('res.jpg', blank_image)
+    file_name = 'res.jpg'
+    return send_file(file_name)
 
 
 if __name__ == '__main__':
