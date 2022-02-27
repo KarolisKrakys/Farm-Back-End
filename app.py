@@ -65,26 +65,26 @@ def get_cordinates():
     pois = [ee.Geometry.Point(*p) for p in arrs]
     rois = [poi.buffer(BUFFER) for poi in pois]
 
-    # cordinates = request.form.getlist('cords[]')
-    # print('line 66')
-    # for count, roi in enumerate(rois):
-    #     print(count)
-    #     for i, band in enumerate(bands):
-    #         img_info = {
-    #             'min': b_min[i],
-    #             'max': b_max[i],
-    #             'bands':[band],
-    #             'dimensions': 512,
-    #             'palette': ["000080","#0000D9","#4000FF","#8000FF","#0080FF","#00FFFF",
-    #             "#00FF80","#80FF00","#DAFF00","#FFFF00","#FFF500","#FFDA00",
-    #             "#FFB000","#FFA400","#FF4F00","#FF2500","#FF0A00","#FF00FF"],
-    #             'region': roi, 
-    #         }
-    #         url = era5_img.getThumbUrl(img_info)
-    #         folder_dir = band.split('_')[0]
-    #         r = requests.get(url)
-    #         with open(f'{folder_dir}/{count}.png', 'wb') as f:
-    #             f.write(r.content)
+    cordinates = request.form.getlist('cords[]')
+    print('line 66')
+    for count, roi in enumerate(rois):
+        print(count)
+        for i, band in enumerate(bands):
+            img_info = {
+                'min': b_min[i],
+                'max': b_max[i],
+                'bands':[band],
+                'dimensions': 512,
+                'palette': ["000080","#0000D9","#4000FF","#8000FF","#0080FF","#00FFFF",
+                "#00FF80","#80FF00","#DAFF00","#FFFF00","#FFF500","#FFDA00",
+                "#FFB000","#FFA400","#FF4F00","#FF2500","#FF0A00","#FF00FF"],
+                'region': roi, 
+            }
+            url = era5_img.getThumbUrl(img_info)
+            folder_dir = band.split('_')[0]
+            r = requests.get(url)
+            with open(f'{folder_dir}/{count}.png', 'wb') as f:
+                f.write(r.content)
     process()
     print('line 85')
 
