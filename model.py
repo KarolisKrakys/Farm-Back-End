@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 
 BATCH_SIZE = 60
 
+'''
+1D Convolutional model
+'''
+
 class NeuralNetwork(Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
